@@ -1,4 +1,4 @@
-package bomberman.player.rlAgents.qLearning.simple3;
+package bomberman.player.rlAgents.sarsa.simple3;
 
 import bomberman.game.*;
 import bomberman.player.AbstractPlayer;
@@ -6,26 +6,30 @@ import bomberman.player.SimplePlayer;
 import bomberman.player.rlAgents.RLPlayer;
 import bomberman.player.rlAgents.qLearning.simple1.SimpleQLearningPlayer1;
 import bomberman.player.rlAgents.qLearning.simple1.SimpleState1Type;
+import bomberman.player.rlAgents.qLearning.simple3.QPair3;
+import bomberman.player.rlAgents.qLearning.simple3.SimpleState3;
+import bomberman.player.rlAgents.qLearning.simple3.SimpleState3Tile;
+import bomberman.player.rlAgents.qLearning.simple3.SimpleState3Type;
 import bomberman.player.rlAgents.result.Result;
 
 import java.io.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class SimpleQLearningPlayer3 extends RLPlayer {
+public class SarsaSimple3 extends RLPlayer {
 
     private static final int REWARD_MOVE = -1;
     private static final int REWARD_BOMB = -3;
     private static final int REWARD_INVALID_MOVE = -30;
     private static final int REWARD_KILLED = -300;
-//    private static final int REWARD_KILLED_BY_OWN = -1000;
+    //    private static final int REWARD_KILLED_BY_OWN = -1000;
     private static final int REWARD_KILLED_BY_OWN = -400;
-//    private static final int REWARD_KILL = +1000;
+    //    private static final int REWARD_KILL = +1000;
     private static final int REWARD_KILL = +700;
     private static final int REWARD_DESTROY_TILE = +50;
 
     private static final boolean SHOW_LOG = false;
-//    private static final boolean SHOW_LOG = true;
+//        private static final boolean SHOW_LOG = true;
 //    private static final boolean DISABLE_EPSILON = false;
     private static final boolean DISABLE_EPSILON = true;
 
@@ -40,8 +44,8 @@ public class SimpleQLearningPlayer3 extends RLPlayer {
     private int generations;
     private int killNum;
     private int killedNum;
-//    private int killedNum;
-    public SimpleQLearningPlayer3(ColorType playerColor, String name) {
+    //    private int killedNum;
+    public SarsaSimple3(ColorType playerColor, String name) {
         super(playerColor, name);
         random = new Random();
         possibleMoves = List.of(Move.LEFT, Move.RIGHT, Move.DOWN, Move.UP, Move.STAY, Move.BOMB);
@@ -49,7 +53,7 @@ public class SimpleQLearningPlayer3 extends RLPlayer {
         this.killNum = 0;
         this.killedNum = 0;
         try {
-            FileInputStream fi = new FileInputStream("src/bomberman/player/rlAgents/qLearning/simple3/trainData/" + this.getName());
+            FileInputStream fi = new FileInputStream("src/bomberman/player/rlAgents/sarsa/simple3/trainData/" + this.getName());
             ObjectInputStream oi = new ObjectInputStream(fi);
             qTable = (HashMap)oi.readObject();
         } catch (Exception e) {
@@ -64,7 +68,7 @@ public class SimpleQLearningPlayer3 extends RLPlayer {
         System.out.println("killeds: " + killedNum);
         if (DISABLE_EPSILON) return;
         try {
-            FileOutputStream fileOut = new FileOutputStream("src/bomberman/player/rlAgents/qLearning/simple3/trainData/" + this.getName());
+            FileOutputStream fileOut = new FileOutputStream("src/bomberman/player/rlAgents/sarsa/simple3/trainData/" + this.getName());
             ObjectOutputStream objectOut = new ObjectOutputStream(fileOut);
             objectOut.writeObject(qTable);
             objectOut.close();
@@ -213,7 +217,7 @@ public class SimpleQLearningPlayer3 extends RLPlayer {
                 minVec = new Point(
                         player.getTile().getCoordinate().x - this.getTile().getCoordinate().x,
                         player.getTile().getCoordinate().y - this.getTile().getCoordinate().y
-                        );
+                );
             }
         }
 
@@ -358,10 +362,10 @@ public class SimpleQLearningPlayer3 extends RLPlayer {
         if (simpleState1.getSurrounding()[4].getTileType() == SimpleState3Type.FREE) {
             validMoves.add(Move.DOWN);
         }
-//        if (SHOW_LOG) {
-//            System.out.println(simpleState1);
-//            System.out.println(Arrays.toString(validMoves.toArray()));
-//        }
+        if (SHOW_LOG) {
+            System.out.println(simpleState1);
+            System.out.println(Arrays.toString(validMoves.toArray()));
+        }
         return validMoves;
     }
 
@@ -378,8 +382,12 @@ public class SimpleQLearningPlayer3 extends RLPlayer {
     private int getReward(Result result, int tileNum, int tickCount) {
         int killedReward = 0;
 
-        if (result.isDiedByOwn()) killedReward = REWARD_KILLED_BY_OWN;
-        else if (result.isKilled()) killedReward = REWARD_KILLED;
+        if (result.isDiedByOwn()) {
+            killedReward = REWARD_KILLED_BY_OWN;
+        }
+        else if (result.isKilled()) {
+            killedReward = REWARD_KILLED;
+        }
 //        if (!result.isValidMove()) System.out.println("not a valid move");
 //        int reward = (((result.isValidMove()) ? (chosenAction == Move.BOMB)? REWARD_BOMB : REWARD_MOVE
         int reward = (((result.isValidMove()) ? (chosenAction == Move.BOMB)? rewardFunctionBomb(tickCount) : rewardFunctionMove(tickCount)
@@ -467,16 +475,17 @@ public class SimpleQLearningPlayer3 extends RLPlayer {
 //        if (reward > -1) {
 //            System.out.println(reward);
 //        }
-        Double newQ = currentQ + LEARNING_RATE*(reward + DISCOUNT_FACTOR*maxNextQ - currentQ);
-        if (SHOW_LOG) {
-            System.out.println(Arrays.toString(possibleQ.toArray()));
-            System.out.println(reward + ", " + currentQ + ", " + newQ);
+        double newQ;
+        if (random.nextDouble() <= EPSILON && !DISABLE_EPSILON) {
+            newQ = currentQ + LEARNING_RATE*(reward + DISCOUNT_FACTOR*possibleQ.get(random.nextInt(possibleQ.size())) - currentQ);
+        } else {
+            newQ = currentQ + LEARNING_RATE*(reward + DISCOUNT_FACTOR*maxNextQ - currentQ);
         }
         qTable.put(qPair, newQ);
     }
 
     public static void main(String[] args) {
-        SimpleQLearningPlayer3 qLearningPlayer2 = new SimpleQLearningPlayer3(ColorType.GREEN, "SimpleQ2");
+        SarsaSimple3 qLearningPlayer2 = new SarsaSimple3(ColorType.GREEN, "SimpleQ2");
         for(Map.Entry<QPair3, Double> entry: qLearningPlayer2.qTable.entrySet()) {
 //            if (entry.getKey().getSimpleState().getPlacedBombs() > 0) {
 //
