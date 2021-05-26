@@ -22,21 +22,22 @@ public class DeepLearningPlayer extends RLPlayer {
     private int killNum;
     private int killedNum;
     private int killedByOwnNum;
-    private static final boolean DISABLE_EPSILON = false;
-//    private static final boolean DISABLE_EPSILON = true;
+//    private static final boolean DISABLE_EPSILON = false;
+    private static final boolean DISABLE_EPSILON = true;
 
     private static final int REWARD_MOVE = -1;
     private static final int REWARD_BOMB = -1;
-    private static final int REWARD_INVALID_MOVE = -3;
+    private static final int REWARD_STAY = -2;
+    private static final int REWARD_INVALID_MOVE = -5;
     private static final int REWARD_KILLED = -300;
     //    private static final int REWARD_KILLED_BY_OWN = -1000;
     private static final int REWARD_KILLED_BY_OWN = -300;
     //    private static final int REWARD_KILL = +1000;
     private static final int REWARD_KILL = +100;
     private static final int REWARD_DESTROY_TILE = +30;
-
+    private List<Integer> rewardList;
     private final List<Move> possibleMoves;
-
+    private Move currentMove;
     public DeepLearningPlayer(ColorType playerColor, String name, int port) {
         super(playerColor, name);
         this.port = port;
@@ -52,7 +53,7 @@ public class DeepLearningPlayer extends RLPlayer {
             e.printStackTrace();
         }
         possibleMoves = List.of(Move.LEFT, Move.RIGHT, Move.DOWN, Move.UP, Move.STAY, Move.BOMB);
-
+        rewardList = new ArrayList<>();
         this.killNum = 0;
         this.killedNum = 0;
         this.killedByOwnNum = 0;
@@ -134,11 +135,11 @@ public class DeepLearningPlayer extends RLPlayer {
             e.printStackTrace();
         }
 //        System.out.println("return move");
-
+        currentMove = moveE;
         return moveE;
     }
 
-    private double[][] getDangerMap(Game game) {
+    private int[][] getDangerMap(Game game) {
 
         List<Bomb> q = new ArrayList<>(game.getBombs());
         int[][] regionMatrix = new int[game.getSize()][game.getSize()];
@@ -219,13 +220,18 @@ public class DeepLearningPlayer extends RLPlayer {
             index++;
         }
 
-        double[][] dangerMap = new double[game.getSize()][game.getSize()];
+//        double[][] dangerMap = new double[game.getSize()][game.getSize()];
+        int[][] dangerMap = new int[game.getSize()][game.getSize()];
         for(int i = 0; i < game.getSize(); i++) {
             for(int j = 0; j < game.getSize(); j++) {
                 dangerMap[i][j] =  regionToDangerMatrix.getOrDefault(regionMatrix[i][j], 0);
                 if (dangerMap[i][j] != 0) {
-                    dangerMap[i][j] = dangerMap[i][j] /Game.BOMB_COUNT_DOWN *
+//                    dangerMap[i][j] = dangerMap[i][j] /Game.BOMB_COUNT_DOWN *
+//                            ((regionToIsYours.getOrDefault(regionMatrix[i][j], false)? 1 : -1));
+
+                    dangerMap[i][j] = dangerMap[i][j] *
                             ((regionToIsYours.getOrDefault(regionMatrix[i][j], false)? 1 : -1));
+
                 }
             }
         }
@@ -234,11 +240,13 @@ public class DeepLearningPlayer extends RLPlayer {
     }
 
     private String extractState(Game game) {
-        double[][] dangerMap = getDangerMap(game);
+//        double[][] dangerMap = getDangerMap(game);
+        int[][] dangerMap = getDangerMap(game);
 
         int[][] tileType = new int[game.getSize()][game.getSize()];
         int[][] hasPlayer = new int[game.getSize()][game.getSize()];
         int[][] hasOpponent = new int[game.getSize()][game.getSize()];
+
 
         for(int i = 0; i < game.getSize(); i ++) {
             for (int j = 0; j < game.getSize(); j++) {
@@ -263,33 +271,48 @@ public class DeepLearningPlayer extends RLPlayer {
             }
         }
 
+        double[][] danger = new double[game.getSize()][game.getSize()];
         List<String> vector = new ArrayList<>();
         for(int i = 0; i < game.getSize(); i ++) {
             for (int j = 0; j < game.getSize(); j++) {
-                vector.add(String.valueOf(tileType[i][j]));
-            }
-        }
-        for(int i = 0; i < game.getSize(); i ++) {
-            for (int j = 0; j < game.getSize(); j++) {
-                vector.add(String.valueOf(hasPlayer[i][j]));
-            }
-        }
-        for(int i = 0; i < game.getSize(); i ++) {
-            for (int j = 0; j < game.getSize(); j++) {
-                vector.add(String.valueOf(hasOpponent[i][j]));
-            }
-        }
-        for(int i = 0; i < game.getSize(); i ++) {
-            for (int j = 0; j < game.getSize(); j++) {
-                vector.add(String.format("%.1f", dangerMap[i][j]));
+                int value = ((tileType[i][j] + 1) << 5) |
+                        (hasPlayer[i][j] << 4) |
+                        (hasOpponent[i][j] << 3) | (dangerMap[i][j] + Game.BOMB_COUNT_DOWN);
+
+                double std = (value*1.0)/128;
+                danger[i][j] = std;
+                vector.add(String.format("%.5f", std));
             }
         }
 
-//        printIntMatrix(tileType);
-//        printIntMatrix(hasPlayer);
-//        printIntMatrix(hasOpponent);
-//        printDoubleMatrix(dangerMap);
-
+//        List<String> vector = new ArrayList<>();
+//        for(int i = 0; i < game.getSize(); i ++) {
+//            for (int j = 0; j < game.getSize(); j++) {
+//                vector.add(String.valueOf(tileType[i][j]));
+//            }
+//        }
+//        for(int i = 0; i < game.getSize(); i ++) {
+//            for (int j = 0; j < game.getSize(); j++) {
+//                vector.add(String.valueOf(hasPlayer[i][j]));
+//            }
+//        }
+//        for(int i = 0; i < game.getSize(); i ++) {
+//            for (int j = 0; j < game.getSize(); j++) {
+//                vector.add(String.valueOf(hasOpponent[i][j]));
+//            }
+//        }
+//        for(int i = 0; i < game.getSize(); i ++) {
+//            for (int j = 0; j < game.getSize(); j++) {
+//                vector.add(String.format("%.1f", dangerMap[i][j]));
+//            }
+//        }
+//
+////        printIntMatrix(tileType);
+////        printIntMatrix(hasPlayer);
+////        printIntMatrix(hasOpponent);
+////        printDoubleMatrix(dangerMap);
+//
+////        printDoubleMatrix(danger);
 
         return String.join("/", vector);
 
@@ -304,12 +327,14 @@ public class DeepLearningPlayer extends RLPlayer {
         }
     }
     public void printDoubleMatrix(double[][] matrix) {
+        System.out.println();
         for (double[] ints : matrix) {
             for (double anInt : ints) {
-                System.out.printf("%4.1f", anInt);
+                System.out.printf("  %7.5f", anInt);
             }
             System.out.println();
         }
+        System.out.println();
     }
 
     private void editStateTile(SimpleState3Tile simpleState1Tile, Game game, Tile newTile, int[][] dangerMap) {
@@ -352,7 +377,6 @@ public class DeepLearningPlayer extends RLPlayer {
     }
 
     private int getReward(Result result) {
-//        if (result.isKilled()) return REWARD_KILLED;
         if (result.isKilled()) {
             killedNum++;
         }
@@ -362,7 +386,8 @@ public class DeepLearningPlayer extends RLPlayer {
         if (result.isDiedByOwn()) {
             killedByOwnNum++;
         }
-        int reward = ((result.isValidMove()) ? REWARD_MOVE : REWARD_INVALID_MOVE) +
+        if (result.isKilled()) return REWARD_KILLED;
+        int reward = ((result.isValidMove()) ? ((currentMove == Move.STAY) ? REWARD_STAY : REWARD_MOVE) : REWARD_INVALID_MOVE) +
                 ((result.isKilled()) ? REWARD_KILLED : 0) +
                 REWARD_KILL * result.getGetDestroyedPlayers() +
                 REWARD_DESTROY_TILE * result.getDestroyedWalls();
@@ -391,11 +416,29 @@ public class DeepLearningPlayer extends RLPlayer {
 
         boolean ended = actual_end || !this.isAlive();
         if (ended) {
-//            System.out.println("Episode" + game.getLoopCount());
-        } else {
-            if (!(!game.isEnded() && this.isAlive()))
-                System.out.println("Episode" + game.getLoopCount() + ", " + game.isEnded() + ", " + !this.isAlive());
+            Collections.sort(rewardList);
+            Map<Integer, Integer> rewardCount = new HashMap<>();
+            rewardList.forEach(integer -> {
+                if (rewardCount.containsKey(integer)) {
+                    rewardCount.put(integer, rewardCount.get(integer) + 1);
+                } else {
+                    rewardCount.put(integer, 1);
+                }
+            });
+            String arrays = "[";
+            for(Map.Entry<Integer, Integer> entry: rewardCount.entrySet()) {
+                arrays += "(" + entry.getKey() + ", " + entry.getValue() + "), ";
+            }
+            arrays += "]";
+
+            int sum = rewardList.stream().reduce(0, Integer::sum);
+            System.out.println("Rewards: " +
+                    sum
+                    + ", " + arrays);
+
+            rewardList = new ArrayList<>();
         }
+        rewardList.add(getReward(result));
         out.println("R:" + getReward(result) + ":" + ended + ":" + thisState);
         try {
             String status = in.readLine();
@@ -404,6 +447,17 @@ public class DeepLearningPlayer extends RLPlayer {
             e.printStackTrace();
         }
 //        System.out.println("updated result >" + "R:" + getReward(result) + ":" + ended + ":" + thisState);
+    }
+
+    @Override
+    public void startNewGame(boolean isTraining, int generation, int episode) {
+        out.println("ST:" + isTraining + ":" + generation + ":" + episode);
+        try {
+            String status = in.readLine();
+//            System.out.println(status);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     public void closeSocket() {

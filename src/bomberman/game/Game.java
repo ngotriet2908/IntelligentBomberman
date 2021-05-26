@@ -16,11 +16,11 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.*;
 
-public class Game implements Runnable{
+public class Game implements Runnable {
     private static final boolean ADD_BOMB_RANDOMLY = true;
 
     private static final int STATE_DELAY = 50;
-//    private static final int STATE_DELAY = 1000;
+    //    private static final int STATE_DELAY = 1000;
     public static final int BOMB_COUNT_DOWN = 3;
     private static final int MAX_TURN = 100;
     private static final int BOMB_BLAST_RADIUS = 1;
@@ -36,21 +36,26 @@ public class Game implements Runnable{
     private boolean needRender;
     private boolean autoReset;
     private Random random;
-    private int loopCount;
-    private int maxLoop;
+    //    private int loopCount;
+//    private int maxLoop;
     private Map<AbstractPlayer, Result> resultMap;
     private Map<AbstractPlayer, Integer> scoreMap;
     private Map<Tile, AbstractPlayer> explosionMap;
     private boolean isAnimationDisabled;
 
-    public Game(List<AbstractPlayer> players, int size, boolean autoReset, int maxLoop, boolean isAnimationDisabled) {
+    private int genCount;
+    private int trainCount;
+    private int evalCount;
+
+    public Game(List<AbstractPlayer> players, int size, boolean autoReset, int genCount, int trainCount, int evalCount, boolean isAnimationDisabled) {
         this.players = players;
         this.size = size;
         this.board = new Tile[size][size];
         this.autoReset = autoReset;
-        this. random = new Random();
-        this.maxLoop = maxLoop;
-        this.loopCount = 0;
+        this.random = new Random();
+        this.genCount = genCount;
+        this.trainCount = trainCount;
+        this.evalCount = evalCount;
         this.isAnimationDisabled = isAnimationDisabled;
         this.scoreMap = new HashMap<>();
         this.players.forEach(abstractPlayer -> scoreMap.put(abstractPlayer, 0));
@@ -63,7 +68,6 @@ public class Game implements Runnable{
         this.ended = false;
         this.explosions = new ArrayList<>();
         this.explosionMap = new HashMap<>();
-        this.loopCount++;
         try {
             File myObj = new File("src/bomberman/boardSamples/" + filename);
             Scanner myReader = new Scanner(myObj);
@@ -80,8 +84,8 @@ public class Game implements Runnable{
 
         this.size = rows.size();
         this.board = new Tile[size][size];
-        for(int i = 0; i < size; i++) {
-            for(int j = 0; j < rows.get(i).length; j++) {
+        for (int i = 0; i < size; i++) {
+            for (int j = 0; j < rows.get(i).length; j++) {
                 switch (rows.get(i)[j]) {
                     case "U" -> this.board[i][j] = new Tile(new Point(i, j), TileType.UNBREAKABLE_TILE);
                     case "B" -> this.board[i][j] = new Tile(new Point(i, j), TileType.BREAKABLE_TILE);
@@ -90,16 +94,30 @@ public class Game implements Runnable{
             }
         }
 
-        for(AbstractPlayer player : players) {
-            switch (player.getPlayerColor()) {
-                case RED -> player.setTile(this.board[1][1]);
-//                case RED -> player.setTile(this.board[1 + random.nextInt(size - 3)][1 + random.nextInt(size - 3)]);
-                case BLUE -> player.setTile(this.board[1][size - 2]);
-                case YELLOW -> player.setTile(this.board[size - 2][1]);
-                case GREEN -> player.setTile(this.board[size - 2][size - 2]);
-            }
+//        for(AbstractPlayer player : players) {
+//            switch (player.getPlayerColor()) {
+//                case RED -> player.setTile(this.board[1][1]);
+////                case RED -> player.setTile(this.board[1 + random.nextInt(size - 3)][1 + random.nextInt(size - 3)]);
+//                case BLUE -> player.setTile(this.board[1][size - 2]);
+//                case YELLOW -> player.setTile(this.board[size - 2][1]);
+//                case GREEN -> player.setTile(this.board[size - 2][size - 2]);
+//            }
+//            player.setAlive(true);
+//        }
+
+        List<Tile> startedTiles = new ArrayList<>();
+        startedTiles.add(this.board[1][1]);
+        startedTiles.add(this.board[1][size - 2]);
+        startedTiles.add(this.board[size - 2][1]);
+        startedTiles.add(this.board[size - 2][size - 2]);
+
+        Collections.shuffle(startedTiles);
+        for (AbstractPlayer player : players) {
             player.setAlive(true);
+            player.setTile(startedTiles.get(0));
+            startedTiles.remove(0);
         }
+
 //        Bomb bomb1 = new Bomb(this.board[1][1], BOMB_COUNT_DOWN, 2, players.get(0));
 //        Bomb bomb2 = new Bomb(this.board[1][2], 4, 2, players.get(0));
 //        this.bombs = List.of(bomb1, bomb2);
@@ -122,7 +140,7 @@ public class Game implements Runnable{
         });
 
         List<Bomb> willExplodeQueue = new ArrayList<>();
-        for(Bomb bomb: bombs) {
+        for (Bomb bomb : bombs) {
             bomb.setCountDown(bomb.getCountDown() - 1);
             if (bomb.getCountDown() <= 0) willExplodeQueue.add(bomb);
         }
@@ -130,7 +148,7 @@ public class Game implements Runnable{
         explosions = new ArrayList<>();
         explosionMap = new HashMap<>();
         int index = 0;
-        while(index < willExplodeQueue.size()) {
+        while (index < willExplodeQueue.size()) {
             Bomb bomb = willExplodeQueue.get(index);
             if (!explosions.contains(bomb.getTile())) {
                 explosions.add(bomb.getTile());
@@ -164,13 +182,13 @@ public class Game implements Runnable{
             index++;
         }
 
-        for(Tile tile: explosions) {
-            for(AbstractPlayer player: players) {
+        for (Tile tile : explosions) {
+            for (AbstractPlayer player : players) {
                 if (player.getTile().equals(tile)) {
                     resultMap.get(player).setKilled(true);
                     AbstractPlayer murderer = explosionMap.get(tile);
 //                    System.out.println("player " + player.getPlayerColor() + " is killed in tile " + tile.getCoordinate() + " by " + murderer);
-                    if (murderer != null ) {
+                    if (murderer != null) {
                         if (!murderer.equals(player)) {
                             resultMap.get(murderer).incKill();
                         } else {
@@ -184,7 +202,7 @@ public class Game implements Runnable{
         }
 
 
-        for(Bomb bomb: bombs) {
+        for (Bomb bomb : bombs) {
             if (!willExplodeQueue.contains(bomb)) remainingBombs.add(bomb);
         }
     }
@@ -194,8 +212,8 @@ public class Game implements Runnable{
             return true;
         } else {
             if (!explosions.contains(tile)) {
-                for(Bomb bomb1: bombs) {
-                    if (bomb1.getTile().equals(tile) && !willExplodeQueue.contains(bomb1) ) {
+                for (Bomb bomb1 : bombs) {
+                    if (bomb1.getTile().equals(tile) && !willExplodeQueue.contains(bomb1)) {
                         willExplodeQueue.add(bomb1);
                     }
                 }
@@ -210,13 +228,13 @@ public class Game implements Runnable{
     public String processMoves(Map<AbstractPlayer, Tile> updatedPlayer, List<Bomb> willAddBomb) {
 //        System.out.println("Enter process moves");
         String logs = "---------Moves----------\n";
-        for(AbstractPlayer player: players) {
+        for (AbstractPlayer player : players) {
             if (!player.isAlive()) continue;
             Move move = player.determineMove(this);
             logs += "player " + player.getPlayerColor().toString() + ": " + move.name() + "\n";
             if (move == Move.BOMB) {
                 boolean alreadyHasBomb = false;
-                for (Bomb bomb: bombs) {
+                for (Bomb bomb : bombs) {
                     if (bomb.getTile().equals(player.getTile())) {
                         alreadyHasBomb = true;
                         break;
@@ -224,7 +242,7 @@ public class Game implements Runnable{
                 }
 
                 //check if there will be bomb placed there
-                for (Bomb bomb: willAddBomb) {
+                for (Bomb bomb : willAddBomb) {
                     if (bomb.getTile().equals(player.getTile())) {
                         alreadyHasBomb = true;
                         break;
@@ -271,7 +289,7 @@ public class Game implements Runnable{
 
             // check if there was a bomb there
             boolean collideWithBomb = false;
-            for (Bomb bomb: bombs) {
+            for (Bomb bomb : bombs) {
                 if (bomb.getTile().equals(newTile)) {
                     collideWithBomb = true;
                     break;
@@ -291,10 +309,10 @@ public class Game implements Runnable{
             if (player.isAlive()) {
 
                 // check % for putting additional bombs only check when turn > 100
-                if (random.nextDouble() > (tickCount - MAX_TURN)*1.0/(MAX_TURN + (tickCount - MAX_TURN))) continue;
+                if (random.nextDouble() > (tickCount - MAX_TURN) * 1.0 / (MAX_TURN + (tickCount - MAX_TURN))) continue;
 
                 boolean alreadyHasBomb = false;
-                for (Bomb bomb: bombs) {
+                for (Bomb bomb : bombs) {
                     if (bomb.getTile().equals(player.getTile())) {
                         alreadyHasBomb = true;
                         break;
@@ -310,7 +328,7 @@ public class Game implements Runnable{
 
     public void updateBoard(List<Bomb> remainingBombs) {
 //        System.out.println("Explosion tiles: " + explosions.size());
-        for(Tile tile: explosions) {
+        for (Tile tile : explosions) {
             if (tile.getTileType() == TileType.BREAKABLE_TILE) {
                 AbstractPlayer murderer = explosionMap.get(tile);
                 if (murderer != null) {
@@ -325,15 +343,15 @@ public class Game implements Runnable{
     }
 
     public void updatedPlayer(Map<AbstractPlayer, Tile> updatedPlayer, List<Bomb> willAddBombs) {
-       for(Map.Entry<AbstractPlayer, Tile> entry: updatedPlayer.entrySet()) {
-           entry.getKey().setTile(entry.getValue());
-       }
-       bombs.addAll(willAddBombs);
+        for (Map.Entry<AbstractPlayer, Tile> entry : updatedPlayer.entrySet()) {
+            entry.getKey().setTile(entry.getValue());
+        }
+        bombs.addAll(willAddBombs);
     }
 
     public String updatePlayersResult(Map<AbstractPlayer, Result> resultMap) {
         String logs = "---------Result----------\n";
-        for(AbstractPlayer abstractPlayer: players) {
+        for (AbstractPlayer abstractPlayer : players) {
             if (abstractPlayer instanceof RLPlayer && resultMap.containsKey(abstractPlayer)) {
                 Result result = resultMap.get(abstractPlayer);
 //                System.out.println("updating Q table of " + abstractPlayer.getPlayerColor() + " with result " + result);
@@ -366,18 +384,58 @@ public class Game implements Runnable{
     @Override
     public void run() {
         System.out.println("Start the game loop");
-        do {
-            initialise("board4.txt");
+        for (int gen = 1; gen <= genCount; gen++) {
+            System.out.println();
+            for (int episode = 1; episode <= trainCount; episode++) {
+
+                runOneGame(gen, episode, true);
+                System.out.println("Gen:" + gen + " Training Episode:" + episode);
+            }
+
+            for (int episode = 1; episode <= evalCount; episode++) {
+
+                runOneGame(gen, episode, false);
+                System.out.println("Gen:" + gen + "Evaluation Episode:" + episode);
+            }
+
+            for (Map.Entry<AbstractPlayer, Integer> entry : scoreMap.entrySet()) {
+                System.out.println("Player " + entry.getKey().getPlayerColor() + ": " + entry.getValue());
+            }
+        }
+
+
+        for (AbstractPlayer abstractPlayer : players) {
+            if (abstractPlayer instanceof SimpleQLearningPlayer) {
+                ((SimpleQLearningPlayer) abstractPlayer).saveQTableToFile();
+            } else if (abstractPlayer instanceof SimpleQLearningPlayer1) {
+                ((SimpleQLearningPlayer1) abstractPlayer).saveQTableToFile();
+            } else if (abstractPlayer instanceof SimpleQLearningPlayer2) {
+                ((SimpleQLearningPlayer2) abstractPlayer).saveQTableToFile();
+            } else if (abstractPlayer instanceof SimpleQLearningPlayer3) {
+                ((SimpleQLearningPlayer3) abstractPlayer).saveQTableToFile();
+            } else if (abstractPlayer instanceof SarsaSimple3) {
+                ((SarsaSimple3) abstractPlayer).saveQTableToFile();
+            } else if (abstractPlayer instanceof DoubleQSimple3) {
+                ((DoubleQSimple3) abstractPlayer).saveQTableToFile();
+            } else if (abstractPlayer instanceof DeepLearningPlayer) {
+                ((DeepLearningPlayer) abstractPlayer).closeSocket();
+            }
+        }
+    }
+
+    public void runOneGame(int generation, int episode, boolean isTraining) {
+        initialise("board3.txt");
 //            initialise("board1.txt");
 //            System.out.println("Loop: " + loopCount);
-            if (((loopCount*1.0/maxLoop)*100) % 10 == 0) {
-                System.out.println("progress: " + (int)((loopCount*1.0/maxLoop)*100) + "%");
+        ended = false;
+
+        if (!isAnimationDisabled) controller.logsTextField.setText("");
+        players.forEach(abstractPlayer -> {
+            if (abstractPlayer instanceof RLPlayer) {
+                ((RLPlayer) abstractPlayer).startNewGame(isTraining, generation, episode);
             }
-            ended = false;
-
-            if (!isAnimationDisabled) controller.logsTextField.setText("");
-
-            while(!ended) {
+        });
+        while (!ended) {
 //                if (tickCount > MAX_TURN) {
 //                    ended = true;
 //                    this.players.stream().filter(AbstractPlayer::isAlive).forEach(abstractPlayer -> {
@@ -395,87 +453,64 @@ public class Game implements Runnable{
 //                    break;
 //                }
 
-                tickCount++;
+            tickCount++;
 
-                int alivePlayers = 0;
-                for(AbstractPlayer player : players) {
-                    if (player.isAlive()) alivePlayers++;
+            int alivePlayers = 0;
+            for (AbstractPlayer player : players) {
+                if (player.isAlive()) alivePlayers++;
+            }
+
+            if (alivePlayers <= 1) {
+                if (!isAnimationDisabled) controller.logsTextField.appendText("Game ended \n");
+                ended = true;
+                break;
+            }
+
+
+            if (!isAnimationDisabled) controller.logsTextField.appendText("Tick: " + tickCount + "\n");
+
+            if (!isAnimationDisabled) waitForRendering();
+
+            List<Bomb> remainingBombs = new ArrayList<>();
+            List<Bomb> willAddBombs = new ArrayList<>();
+            Map<AbstractPlayer, Tile> updatedPlayers = new HashMap<>();
+
+            processExplosions(remainingBombs);
+
+            if (!isAnimationDisabled) waitForRendering();
+            String logs = processMoves(updatedPlayers, willAddBombs);
+
+            if (ADD_BOMB_RANDOMLY) addBombRandomly(willAddBombs);
+            updateBoard(remainingBombs);
+            if (!isAnimationDisabled) waitForRendering();
+            explosions = new ArrayList<>();
+            updatedPlayer(updatedPlayers, willAddBombs);
+
+            logs += updatePlayersResult(this.resultMap);
+            if (!isAnimationDisabled) {
+                if (controller.logsTextField.getText().length() > 100000) {
+                    controller.logsTextField.setText("");
                 }
+                controller.logsTextField.appendText(logs);
+            }
+            if (!isAnimationDisabled) waitForRendering();
 
-                if (alivePlayers <= 1) {
-                    if (!isAnimationDisabled) controller.logsTextField.appendText("Game ended \n");
-                    ended = true;
-                    break;
+            if (!isAnimationDisabled) {
+                try {
+                    Thread.sleep(STATE_DELAY);
+                } catch (InterruptedException e) {
+                    System.out.println(e.getMessage());
                 }
-
-
-                if (!isAnimationDisabled) controller.logsTextField.appendText("Tick: " + tickCount + "\n");
-
-                if (!isAnimationDisabled) waitForRendering();
-
-                List<Bomb> remainingBombs = new ArrayList<>();
-                List<Bomb> willAddBombs = new ArrayList<>();
-                Map<AbstractPlayer, Tile> updatedPlayers = new HashMap<>();
-
-                processExplosions(remainingBombs);
-
-                if (!isAnimationDisabled) waitForRendering();
-                String logs = processMoves(updatedPlayers, willAddBombs);
-
-                if (ADD_BOMB_RANDOMLY) addBombRandomly(willAddBombs);
-                updateBoard(remainingBombs);
-                if (!isAnimationDisabled) waitForRendering();
-                explosions = new ArrayList<>();
-                updatedPlayer(updatedPlayers, willAddBombs);
-
-                logs += updatePlayersResult(this.resultMap);
-                if (!isAnimationDisabled) {
-                    if (controller.logsTextField.getText().length() > 1000) {
-                        controller.logsTextField.setText("");
-                    }
-                    controller.logsTextField.appendText(logs);
-                }
-                if (!isAnimationDisabled) waitForRendering();
-
-                if (!isAnimationDisabled) {
-                    try {
-                        Thread.sleep(STATE_DELAY);
-                    } catch (InterruptedException e) {
-                        System.out.println(e.getMessage());
-                    }
-                }
+            }
 
 //            System.out.println("finished rendering 1");
-            }
+        }
 //            System.out.println("game ended");
-            this.players.forEach(abstractPlayer -> {
-                if (abstractPlayer.isAlive()) {
-                    scoreMap.put(abstractPlayer, scoreMap.get(abstractPlayer) + 1);
-                }
-            });
-        } while(loopCount < maxLoop);
-        for(AbstractPlayer abstractPlayer: players) {
-            if (abstractPlayer instanceof SimpleQLearningPlayer) {
-                ((SimpleQLearningPlayer) abstractPlayer).saveQTableToFile();
-            } else if (abstractPlayer instanceof SimpleQLearningPlayer1) {
-                ((SimpleQLearningPlayer1) abstractPlayer).saveQTableToFile();
-            } else if (abstractPlayer instanceof SimpleQLearningPlayer2) {
-                ((SimpleQLearningPlayer2) abstractPlayer).saveQTableToFile();
-            } else if (abstractPlayer instanceof SimpleQLearningPlayer3) {
-                ((SimpleQLearningPlayer3) abstractPlayer).saveQTableToFile();
-            } else if (abstractPlayer instanceof SarsaSimple3) {
-                ((SarsaSimple3) abstractPlayer).saveQTableToFile();
-            } else if (abstractPlayer instanceof DoubleQSimple3) {
-                ((DoubleQSimple3) abstractPlayer).saveQTableToFile();
-            } else if (abstractPlayer instanceof DeepLearningPlayer) {
-                ((DeepLearningPlayer) abstractPlayer).closeSocket();
+        this.players.forEach(abstractPlayer -> {
+            if (abstractPlayer.isAlive()) {
+                scoreMap.put(abstractPlayer, scoreMap.get(abstractPlayer) + 1);
             }
-        }
-//        System.out.println("loop ended");
-//        System.out.println("tick: " + tickCount);
-        for(Map.Entry<AbstractPlayer, Integer> entry: scoreMap.entrySet()) {
-            System.out.println("Player " + entry.getKey().getPlayerColor() + ": " + entry.getValue());
-        }
+        });
     }
 
     public List<AbstractPlayer> getPlayers() {
@@ -574,11 +609,15 @@ public class Game implements Runnable{
         this.autoReset = autoReset;
     }
 
-    public int getLoopCount() {
-        return loopCount;
+    public int getGenCount() {
+        return genCount;
     }
 
-    public void setLoopCount(int loopCount) {
-        this.loopCount = loopCount;
+    public int getTrainCount() {
+        return trainCount;
+    }
+
+    public int getEvalCount() {
+        return evalCount;
     }
 }

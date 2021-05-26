@@ -31,7 +31,7 @@ public class SarsaSimple3 extends RLPlayer {
     private static final boolean SHOW_LOG = false;
 //        private static final boolean SHOW_LOG = true;
 //    private static final boolean DISABLE_EPSILON = false;
-    private static final boolean DISABLE_EPSILON = true;
+//    private static final boolean DISABLE_EPSILON = true;
 
     private static final double EPSILON = 0.1;
     private static final double DISCOUNT_FACTOR = 0.98;
@@ -44,6 +44,10 @@ public class SarsaSimple3 extends RLPlayer {
     private int generations;
     private int killNum;
     private int killedNum;
+    private boolean DISABLE_EPSILON;
+
+    private List<Integer> trainingRewards;
+    private List<Integer> evaluationRewards;
     //    private int killedNum;
     public SarsaSimple3(ColorType playerColor, String name) {
         super(playerColor, name);
@@ -61,6 +65,7 @@ public class SarsaSimple3 extends RLPlayer {
             qTable = new HashMap<>();
         }
         System.out.println(qTable.size());
+        DISABLE_EPSILON = false;
     }
 
     public void saveQTableToFile() {
@@ -482,6 +487,11 @@ public class SarsaSimple3 extends RLPlayer {
             newQ = currentQ + LEARNING_RATE*(reward + DISCOUNT_FACTOR*maxNextQ - currentQ);
         }
         qTable.put(qPair, newQ);
+    }
+
+    @Override
+    public void startNewGame(boolean isTraining, int generation, int episode) {
+        DISABLE_EPSILON = !isTraining;
     }
 
     public static void main(String[] args) {

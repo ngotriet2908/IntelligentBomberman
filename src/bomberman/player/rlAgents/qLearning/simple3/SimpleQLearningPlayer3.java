@@ -475,6 +475,11 @@ public class SimpleQLearningPlayer3 extends RLPlayer {
         qTable.put(qPair, newQ);
     }
 
+    @Override
+    public void startNewGame(boolean isTraining, int generation, int episode) {
+
+    }
+
     public static void main(String[] args) {
         SimpleQLearningPlayer3 qLearningPlayer2 = new SimpleQLearningPlayer3(ColorType.GREEN, "SimpleQ2");
         for(Map.Entry<QPair3, Double> entry: qLearningPlayer2.qTable.entrySet()) {

@@ -3,6 +3,7 @@ package sample;
 import bomberman.game.*;
 import bomberman.player.AbstractPlayer;
 import bomberman.player.HumanPlayer;
+import bomberman.player.RandomPlayer;
 import bomberman.player.SimplePlayer;
 import bomberman.player.rlAgents.deepLearning.DeepLearningPlayer;
 import bomberman.player.rlAgents.doubleQlearning.simple3.DoubleQSimple3;
@@ -36,9 +37,15 @@ public class Controller {
 //    private final int BOARD_SIZE = 9;
     private final int TILE_SIZE_BASE = 300;
 
-    private final int LOOP_COUNT = 10;
+
+    private final int GEN_COUNT = 100;
+    private final int TRAIN_COUNT = 2000;
+    private final int EVAL_COUNT = 100;
     private final boolean DISABLE_ANIMATION = true;
-//    private final int LOOP_COUNT = 1;
+//
+//    private final int GEN_COUNT = 1;
+//    private final int TRAIN_COUNT = 0;
+//    private final int EVAL_COUNT = 10;
 //    private final boolean DISABLE_ANIMATION = false;
 
     private Move enteredMove = null;
@@ -124,16 +131,25 @@ public class Controller {
 //          DoubleQSimple3 qLearningPlayer3 = new DoubleQSimple3(ColorType.BLUE, "SimpleQ13");
 //          List<AbstractPlayer> playerList = List.of(qLearningPlayer1, qLearningPlayer2, qLearningPlayer3);
 
-                  //Only Move.STAY vs Double Q Learning with 5-tile info as state
-          SimplePlayer simplePlayer2 = new SimplePlayer(ColorType.RED);
-          DeepLearningPlayer qLearningPlayer2 = new DeepLearningPlayer(ColorType.GREEN, "SimpleQ3", 8080);
-          List<AbstractPlayer> playerList = List.of(simplePlayer2, qLearningPlayer2);
+//                  //Only Move.STAY vs Double Q Learning with 5-tile info as state
+//          SimplePlayer simplePlayer2 = new SimplePlayer(ColorType.RED);
+//          DeepLearningPlayer qLearningPlayer2 = new DeepLearningPlayer(ColorType.GREEN, "SimpleQ7", 8080);
+//          List<AbstractPlayer> playerList = List.of(simplePlayer2, qLearningPlayer2);
+//                  //Only Move.STAY vs Double Q Learning with 5-tile info as state
+//          RandomPlayer simplePlayer2 = new RandomPlayer(ColorType.RED);
+//          DeepLearningPlayer qLearningPlayer2 = new DeepLearningPlayer(ColorType.GREEN, "SimpleQ7", 8080);
+//          List<AbstractPlayer> playerList = List.of(simplePlayer2, qLearningPlayer2);
 
 //          //Only Move.STAY vs Double Q Learning with 5-tile info as state -> enable random bombs, board5.txt
 //          SarsaSimple3 qLearningPlayer1 = new SarsaSimple3(ColorType.RED, "SimpleQ11");
 //          SimpleQLearningPlayer3 qLearningPlayer2 = new SimpleQLearningPlayer3(ColorType.GREEN, "SimpleQ11");
 //          DoubleQSimple3 qLearningPlayer3 = new DoubleQSimple3(ColorType.BLUE, "SimpleQ11");
 //          List<AbstractPlayer> playerList = List.of(qLearningPlayer1, qLearningPlayer2, qLearningPlayer3);
+
+                  //Only Move.STAY vs Sarsa with 5-tile info as state
+          DeepLearningPlayer simplePlayer2 = new DeepLearningPlayer(ColorType.RED, "SimpleQ9", 8080);
+          SarsaSimple3 qLearningPlayer2 = new SarsaSimple3(ColorType.GREEN, "SimpleQ3");
+          List<AbstractPlayer> playerList = List.of(simplePlayer2, qLearningPlayer2);
 
 //          //Only Move.STAY vs Double Q Learning with 5-tile info as state -> disable random bombs
 //          SarsaSimple3 qLearningPlayer1 = new SarsaSimple3(ColorType.RED, "SimpleQ9");
@@ -157,7 +173,7 @@ public class Controller {
 //        List<AbstractPlayer> playerList = List.of(simplePlayer2, qLearningPlayer2);
 //        List<AbstractPlayer> playerList = List.of(simplePlayer2, qLearningPlayer);
 
-        game = new Game(playerList, 0, true, LOOP_COUNT, DISABLE_ANIMATION);
+        game = new Game(playerList, 0, true, GEN_COUNT, TRAIN_COUNT, EVAL_COUNT, DISABLE_ANIMATION);
         game.setController(this);
         Thread thread = new Thread(game);
         thread.start();

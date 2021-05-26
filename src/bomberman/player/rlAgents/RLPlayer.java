@@ -16,6 +16,8 @@ public abstract class RLPlayer extends AbstractPlayer {
 
     public abstract void updateResult(Result result, Game game);
 
+    public abstract void startNewGame(boolean isTraining, int generation, int episode);
+
     public String getName() {
         return name;
     }

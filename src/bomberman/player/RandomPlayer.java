@@ -17,7 +17,7 @@ public class RandomPlayer extends AbstractPlayer{
         Random random = new Random();
         while(true) {
 //            int prob = random.nextInt(100) + 1;
-            if (random.nextInt(100) + 1 < 10) {
+            if (random.nextInt(100) + 1 < 2) {
                 return Move.BOMB;
             }
             if (random.nextInt(100) + 1 < 20) {

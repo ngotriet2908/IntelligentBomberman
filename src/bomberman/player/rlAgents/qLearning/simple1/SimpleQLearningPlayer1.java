@@ -235,4 +235,9 @@ public class SimpleQLearningPlayer1 extends RLPlayer {
         Double newQ = currentQ + LEARNING_RATE*(reward + DISCOUNT_FACTOR*maxNextQ - currentQ);
         qTable.put(qPair, newQ);
     }
+
+    @Override
+    public void startNewGame(boolean isTraining, int generation, int episode) {
+
+    }
 }
