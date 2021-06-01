@@ -10,11 +10,6 @@ import java.util.*;
 
 public class SimpleQLearningPlayer extends RLPlayer {
 
-    private static final int REWARD_MOVE = -1;
-    private static final int REWARD_INVALID_MOVE = -3;
-    private static final int REWARD_KILLED = -300;
-    private static final int REWARD_KILL = +100;
-    private static final int REWARD_DESTROY_TILE = +30;
 //    private static final boolean DISABLE_EPSILON = false;
     private static final boolean DISABLE_EPSILON = true;
 
@@ -25,13 +20,11 @@ public class SimpleQLearningPlayer extends RLPlayer {
     private SimpleState prevSimpleState;
     private Move chosenAction;
     private final Random random;
-    private final List<Move> possibleMoves;
     private int generations;
 
     public SimpleQLearningPlayer(ColorType playerColor, String name) {
         super(playerColor, name);
         random = new Random();
-        possibleMoves = List.of(Move.LEFT, Move.RIGHT, Move.DOWN, Move.UP, Move.STAY, Move.BOMB);
         this.generations = 0;
 
         try {
@@ -114,52 +107,53 @@ public class SimpleQLearningPlayer extends RLPlayer {
     }
 
     private List<Move> getPossibleActions(Game game) {
-        List<Move> validMoves = new ArrayList<>();
-        for(Move move: possibleMoves) {
-            if (move == Move.BOMB) {
-                boolean alreadyHasBomb = false;
-                for (Bomb bomb: game.getBombs()) {
-                    if (bomb.getTile().equals(this.getTile())) {
-                        alreadyHasBomb = true;
-                        break;
-                    }
-                }
-                if (!alreadyHasBomb) {
-                    validMoves.add(move);
-                }
-                continue;
-            }
-
-            if (move == Move.STAY) {
-                validMoves.add(move);
-                continue;
-            }
-
-            Tile newTile = game.getBoard()[this.getTile().getCoordinate().x + move.getPoint().x][this.getTile().getCoordinate().y + move.getPoint().y];
-            if (newTile.getTileType() != TileType.FREE) {
-                continue;
-            }
-
-            boolean collideWithPlayer = false;
-            for (AbstractPlayer player1: game.getPlayers()) {
-                if (player1.getTile().equals(newTile)) {
-                    collideWithPlayer = true;
-                    break;
-                }
-            }
-            if (collideWithPlayer) continue;
-
-            boolean collideWithBomb = false;
-            for (Bomb bomb: game.getBombs()) {
-                if (bomb.getTile().equals(newTile)) {
-                    collideWithBomb = true;
-                    break;
-                }
-            }
-            if (collideWithBomb) continue;
-            validMoves.add(move);
-        }
-        return validMoves;
+//        List<Move> validMoves = new ArrayList<>();
+//        for(Move move: possibleMoves) {
+//            if (move == Move.BOMB) {
+//                boolean alreadyHasBomb = false;
+//                for (Bomb bomb: game.getBombs()) {
+//                    if (bomb.getTile().equals(this.getTile())) {
+//                        alreadyHasBomb = true;
+//                        break;
+//                    }
+//                }
+//                if (!alreadyHasBomb) {
+//                    validMoves.add(move);
+//                }
+//                continue;
+//            }
+//
+//            if (move == Move.STAY) {
+//                validMoves.add(move);
+//                continue;
+//            }
+//
+//            Tile newTile = game.getBoard()[this.getTile().getCoordinate().x + move.getPoint().x][this.getTile().getCoordinate().y + move.getPoint().y];
+//            if (newTile.getTileType() != TileType.FREE) {
+//                continue;
+//            }
+//
+//            boolean collideWithPlayer = false;
+//            for (AbstractPlayer player1: game.getPlayers()) {
+//                if (player1.getTile().equals(newTile)) {
+//                    collideWithPlayer = true;
+//                    break;
+//                }
+//            }
+//            if (collideWithPlayer) continue;
+//
+//            boolean collideWithBomb = false;
+//            for (Bomb bomb: game.getBombs()) {
+//                if (bomb.getTile().equals(newTile)) {
+//                    collideWithBomb = true;
+//                    break;
+//                }
+//            }
+//            if (collideWithBomb) continue;
+//            validMoves.add(move);
+//        }
+//        return validMoves;
+        return possibleMoves;
     }
 
     private int getReward(Result result) {
@@ -233,5 +227,10 @@ public class SimpleQLearningPlayer extends RLPlayer {
     @Override
     public void startNewGame(boolean isTraining, int generation, int episode) {
 
+    }
+
+    @Override
+    public List<Double> getRewards() {
+        return null;
     }
 }

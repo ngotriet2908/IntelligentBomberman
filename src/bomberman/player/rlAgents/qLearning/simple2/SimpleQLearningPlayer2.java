@@ -11,12 +11,6 @@ import java.util.stream.Collectors;
 
 public class SimpleQLearningPlayer2 extends RLPlayer {
 
-    private static final int REWARD_MOVE = -1;
-    private static final int REWARD_INVALID_MOVE = -50;
-    private static final int REWARD_KILLED = -300;
-    private static final int REWARD_KILL = +100;
-    private static final int REWARD_DESTROY_TILE = +50;
-
     private static final double EPSILON = 0.1;
     private static final double DISCOUNT_FACTOR = 0.95;
     private static final double LEARNING_RATE = 0.3;
@@ -24,13 +18,11 @@ public class SimpleQLearningPlayer2 extends RLPlayer {
     private SimpleState2 prevSimpleState;
     private Move chosenAction;
     private final Random random;
-    private final List<Move> possibleMoves;
     private int generations;
 
     public SimpleQLearningPlayer2(ColorType playerColor, String name) {
         super(playerColor, name);
         random = new Random();
-        possibleMoves = List.of(Move.LEFT, Move.RIGHT, Move.DOWN, Move.UP, Move.STAY, Move.BOMB);
         this.generations = 0;
 
         try {
@@ -75,19 +67,20 @@ public class SimpleQLearningPlayer2 extends RLPlayer {
     }
 
     private List<Move> getPossibleActions(Game game) {
-        List<Move> validMoves = new ArrayList<>();
-        validMoves.add(Move.STAY);
-        validMoves.add(Move.LEFT);
-        validMoves.add(Move.RIGHT);
-        validMoves.add(Move.UP);
-        validMoves.add(Move.DOWN);
-
-        if (game.getBombs().stream()
-                .noneMatch(bomb -> bomb.getOwner().equals(this) && bomb.getTile().equals(this.getTile()))) {
-            validMoves.add(Move.BOMB);
-        }
-//        System.out.println(Arrays.toString(validMoves.toArray()));
-        return validMoves;
+//        List<Move> validMoves = new ArrayList<>();
+//        validMoves.add(Move.STAY);
+//        validMoves.add(Move.LEFT);
+//        validMoves.add(Move.RIGHT);
+//        validMoves.add(Move.UP);
+//        validMoves.add(Move.DOWN);
+//
+//        if (game.getBombs().stream()
+//                .noneMatch(bomb -> bomb.getOwner().equals(this) && bomb.getTile().equals(this.getTile()))) {
+//            validMoves.add(Move.BOMB);
+//        }
+////        System.out.println(Arrays.toString(validMoves.toArray()));
+//        return validMoves;
+        return possibleMoves;
     }
 
     private int getReward(Result result) {
@@ -161,6 +154,11 @@ public class SimpleQLearningPlayer2 extends RLPlayer {
     @Override
     public void startNewGame(boolean isTraining, int generation, int episode) {
 
+    }
+
+    @Override
+    public List<Double> getRewards() {
+        return null;
     }
 
     public static void main(String[] args) {

@@ -7,6 +7,17 @@ import java.util.List;
 import java.util.Objects;
 
 public abstract class AbstractPlayer {
+
+    protected static final int REWARD_MOVE = -1;
+    protected static final int REWARD_BOMB = -1;
+    protected static final int REWARD_STAY = -2;
+    protected static final int REWARD_INVALID_MOVE = -5;
+    protected static final int REWARD_KILLED = -300;
+    //    private static final int REWARD_KILLED_BY_OWN = -1000;
+    protected static final int REWARD_KILLED_BY_OWN = -300;
+    protected static final int REWARD_KILL = +100;
+    protected static final int REWARD_DESTROY_TILE = +30;
+
     private List<Bomb> placedBombs;
 //    private Point coordinate;
     private Tile tile;

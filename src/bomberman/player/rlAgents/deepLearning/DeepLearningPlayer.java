@@ -22,19 +22,6 @@ public class DeepLearningPlayer extends RLPlayer {
     private int killNum;
     private int killedNum;
     private int killedByOwnNum;
-//    private static final boolean DISABLE_EPSILON = false;
-    private static final boolean DISABLE_EPSILON = true;
-
-    private static final int REWARD_MOVE = -1;
-    private static final int REWARD_BOMB = -1;
-    private static final int REWARD_STAY = -2;
-    private static final int REWARD_INVALID_MOVE = -5;
-    private static final int REWARD_KILLED = -300;
-    //    private static final int REWARD_KILLED_BY_OWN = -1000;
-    private static final int REWARD_KILLED_BY_OWN = -300;
-    //    private static final int REWARD_KILL = +1000;
-    private static final int REWARD_KILL = +100;
-    private static final int REWARD_DESTROY_TILE = +30;
     private List<Integer> rewardList;
     private final List<Move> possibleMoves;
     private Move currentMove;
@@ -48,7 +35,7 @@ public class DeepLearningPlayer extends RLPlayer {
             System.out.println("got connection on port " + port);
             this.in = new BufferedReader(new InputStreamReader(client.getInputStream()));
             this.out = new PrintWriter(client.getOutputStream(),true);
-            out.println(name + ":" + !DISABLE_EPSILON);
+            out.println(name + ":");
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -139,7 +126,7 @@ public class DeepLearningPlayer extends RLPlayer {
         return moveE;
     }
 
-    private int[][] getDangerMap(Game game) {
+    private double[][] getDangerMap(Game game) {
 
         List<Bomb> q = new ArrayList<>(game.getBombs());
         int[][] regionMatrix = new int[game.getSize()][game.getSize()];
@@ -220,17 +207,17 @@ public class DeepLearningPlayer extends RLPlayer {
             index++;
         }
 
-//        double[][] dangerMap = new double[game.getSize()][game.getSize()];
-        int[][] dangerMap = new int[game.getSize()][game.getSize()];
+        double[][] dangerMap = new double[game.getSize()][game.getSize()];
+//        int[][] dangerMap = new int[game.getSize()][game.getSize()];
         for(int i = 0; i < game.getSize(); i++) {
             for(int j = 0; j < game.getSize(); j++) {
                 dangerMap[i][j] =  regionToDangerMatrix.getOrDefault(regionMatrix[i][j], 0);
                 if (dangerMap[i][j] != 0) {
-//                    dangerMap[i][j] = dangerMap[i][j] /Game.BOMB_COUNT_DOWN *
-//                            ((regionToIsYours.getOrDefault(regionMatrix[i][j], false)? 1 : -1));
-
-                    dangerMap[i][j] = dangerMap[i][j] *
+                    dangerMap[i][j] = dangerMap[i][j] /Game.BOMB_COUNT_DOWN *
                             ((regionToIsYours.getOrDefault(regionMatrix[i][j], false)? 1 : -1));
+
+//                    dangerMap[i][j] = dangerMap[i][j] *
+//                            ((regionToIsYours.getOrDefault(regionMatrix[i][j], false)? 1 : -1));
 
                 }
             }
@@ -240,8 +227,8 @@ public class DeepLearningPlayer extends RLPlayer {
     }
 
     private String extractState(Game game) {
-//        double[][] dangerMap = getDangerMap(game);
-        int[][] dangerMap = getDangerMap(game);
+        double[][] dangerMap = getDangerMap(game);
+//        int[][] dangerMap = getDangerMap(game);
 
         int[][] tileType = new int[game.getSize()][game.getSize()];
         int[][] hasPlayer = new int[game.getSize()][game.getSize()];
@@ -271,41 +258,41 @@ public class DeepLearningPlayer extends RLPlayer {
             }
         }
 
-        double[][] danger = new double[game.getSize()][game.getSize()];
-        List<String> vector = new ArrayList<>();
-        for(int i = 0; i < game.getSize(); i ++) {
-            for (int j = 0; j < game.getSize(); j++) {
-                int value = ((tileType[i][j] + 1) << 5) |
-                        (hasPlayer[i][j] << 4) |
-                        (hasOpponent[i][j] << 3) | (dangerMap[i][j] + Game.BOMB_COUNT_DOWN);
-
-                double std = (value*1.0)/128;
-                danger[i][j] = std;
-                vector.add(String.format("%.5f", std));
-            }
-        }
-
+//        double[][] danger = new double[game.getSize()][game.getSize()];
 //        List<String> vector = new ArrayList<>();
 //        for(int i = 0; i < game.getSize(); i ++) {
 //            for (int j = 0; j < game.getSize(); j++) {
-//                vector.add(String.valueOf(tileType[i][j]));
+//                int value = ((tileType[i][j] + 1) << 5) |
+//                        (hasPlayer[i][j] << 4) |
+//                        (hasOpponent[i][j] << 3) | (dangerMap[i][j] + Game.BOMB_COUNT_DOWN);
+//
+//                double std = (value*1.0)/128;
+//                danger[i][j] = std;
+//                vector.add(String.format("%.5f", std));
 //            }
 //        }
-//        for(int i = 0; i < game.getSize(); i ++) {
-//            for (int j = 0; j < game.getSize(); j++) {
-//                vector.add(String.valueOf(hasPlayer[i][j]));
-//            }
-//        }
-//        for(int i = 0; i < game.getSize(); i ++) {
-//            for (int j = 0; j < game.getSize(); j++) {
-//                vector.add(String.valueOf(hasOpponent[i][j]));
-//            }
-//        }
-//        for(int i = 0; i < game.getSize(); i ++) {
-//            for (int j = 0; j < game.getSize(); j++) {
-//                vector.add(String.format("%.1f", dangerMap[i][j]));
-//            }
-//        }
+
+        List<String> vector = new ArrayList<>();
+        for(int i = 0; i < game.getSize(); i ++) {
+            for (int j = 0; j < game.getSize(); j++) {
+                vector.add(String.valueOf(tileType[i][j]));
+            }
+        }
+        for(int i = 0; i < game.getSize(); i ++) {
+            for (int j = 0; j < game.getSize(); j++) {
+                vector.add(String.valueOf(hasPlayer[i][j]));
+            }
+        }
+        for(int i = 0; i < game.getSize(); i ++) {
+            for (int j = 0; j < game.getSize(); j++) {
+                vector.add(String.valueOf(hasOpponent[i][j]));
+            }
+        }
+        for(int i = 0; i < game.getSize(); i ++) {
+            for (int j = 0; j < game.getSize(); j++) {
+                vector.add(String.format("%.1f", dangerMap[i][j]));
+            }
+        }
 //
 ////        printIntMatrix(tileType);
 ////        printIntMatrix(hasPlayer);
@@ -383,11 +370,9 @@ public class DeepLearningPlayer extends RLPlayer {
         if (result.getGetDestroyedPlayers() > 0) {
             killNum += result.getGetDestroyedPlayers();
         }
-        if (result.isDiedByOwn()) {
-            killedByOwnNum++;
-        }
+
         if (result.isKilled()) return REWARD_KILLED;
-        int reward = ((result.isValidMove()) ? ((currentMove == Move.STAY) ? REWARD_STAY : REWARD_MOVE) : REWARD_INVALID_MOVE) +
+        int reward = ((result.isValidMove()) ? REWARD_MOVE : REWARD_INVALID_MOVE) +
                 ((result.isKilled()) ? REWARD_KILLED : 0) +
                 REWARD_KILL * result.getGetDestroyedPlayers() +
                 REWARD_DESTROY_TILE * result.getDestroyedWalls();
@@ -416,29 +401,30 @@ public class DeepLearningPlayer extends RLPlayer {
 
         boolean ended = actual_end || !this.isAlive();
         if (ended) {
-            Collections.sort(rewardList);
-            Map<Integer, Integer> rewardCount = new HashMap<>();
-            rewardList.forEach(integer -> {
-                if (rewardCount.containsKey(integer)) {
-                    rewardCount.put(integer, rewardCount.get(integer) + 1);
-                } else {
-                    rewardCount.put(integer, 1);
-                }
-            });
-            String arrays = "[";
-            for(Map.Entry<Integer, Integer> entry: rewardCount.entrySet()) {
-                arrays += "(" + entry.getKey() + ", " + entry.getValue() + "), ";
-            }
-            arrays += "]";
-
-            int sum = rewardList.stream().reduce(0, Integer::sum);
-            System.out.println("Rewards: " +
-                    sum
-                    + ", " + arrays);
-
-            rewardList = new ArrayList<>();
+//            Collections.sort(rewardList);
+//            Map<Integer, Integer> rewardCount = new HashMap<>();
+//            rewardList.forEach(integer -> {
+//                if (rewardCount.containsKey(integer)) {
+//                    rewardCount.put(integer, rewardCount.get(integer) + 1);
+//                } else {
+//                    rewardCount.put(integer, 1);
+//                }
+//            });
+//            String arrays = "[";
+//            for(Map.Entry<Integer, Integer> entry: rewardCount.entrySet()) {
+//                arrays += "(" + entry.getKey() + ", " + entry.getValue() + "), ";
+//            }
+//            arrays += "]";
+//
+//            int sum = rewardList.stream().reduce(0, Integer::sum);
+//            System.out.println("Rewards: " +
+//                    sum
+//                    + ", " + arrays);
+//
+//            rewardList = new ArrayList<>();
         }
-        rewardList.add(getReward(result));
+//        rewardList.add(getReward(result));
+        reward += getReward(result);
         out.println("R:" + getReward(result) + ":" + ended + ":" + thisState);
         try {
             String status = in.readLine();
@@ -458,6 +444,17 @@ public class DeepLearningPlayer extends RLPlayer {
         } catch (IOException e) {
             e.printStackTrace();
         }
+        reward = 0;
+    }
+
+    @Override
+    public void endAGame(boolean isTraining, int generation, int episode) {
+        rewards.add((double)reward);
+    }
+
+    @Override
+    public List<Double> getRewards() {
+        return null;
     }
 
     public void closeSocket() {

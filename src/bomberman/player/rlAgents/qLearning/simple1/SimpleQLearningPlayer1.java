@@ -11,12 +11,6 @@ import java.util.stream.Collectors;
 
 public class SimpleQLearningPlayer1 extends RLPlayer {
 
-    private static final int REWARD_MOVE = -1;
-    private static final int REWARD_INVALID_MOVE = -3;
-    private static final int REWARD_KILLED = -300;
-    private static final int REWARD_KILL = +100;
-    private static final int REWARD_DESTROY_TILE = +30;
-
     private static final boolean DISABLE_EPSILON = false;
 //    private static final boolean DISABLE_EPSILON = true;
 
@@ -27,13 +21,11 @@ public class SimpleQLearningPlayer1 extends RLPlayer {
     private SimpleState1 prevSimpleState;
     private Move chosenAction;
     private final Random random;
-    private final List<Move> possibleMoves;
     private int generations;
 
     public SimpleQLearningPlayer1(ColorType playerColor, String name) {
         super(playerColor, name);
         random = new Random();
-        possibleMoves = List.of(Move.LEFT, Move.RIGHT, Move.DOWN, Move.UP, Move.STAY, Move.BOMB);
         this.generations = 0;
 
         try {
@@ -140,32 +132,33 @@ public class SimpleQLearningPlayer1 extends RLPlayer {
     }
 
     private List<Move> getPossibleActions(SimpleState1 simpleState1) {
-        List<Move> validMoves = new ArrayList<>();
-        validMoves.add(Move.STAY);
-
-        if (simpleState1.getSurrounding()[0].getTileType() == SimpleState1Type.FREE &&
-                !simpleState1.getSurrounding()[0].isHasOpponent()
-        ) {
-            validMoves.add(Move.BOMB);
-        }
-        if (simpleState1.getSurrounding()[1].getTileType() == SimpleState1Type.FREE &&
-                !simpleState1.getSurrounding()[1].isHasOpponent()) {
-            validMoves.add(Move.RIGHT);
-        }
-        if (simpleState1.getSurrounding()[2].getTileType() == SimpleState1Type.FREE &&
-                !simpleState1.getSurrounding()[2].isHasOpponent()) {
-            validMoves.add(Move.UP);
-        }
-        if (simpleState1.getSurrounding()[3].getTileType() == SimpleState1Type.FREE &&
-                !simpleState1.getSurrounding()[3].isHasOpponent()) {
-            validMoves.add(Move.LEFT);
-        }
-        if (simpleState1.getSurrounding()[4].getTileType() == SimpleState1Type.FREE &&
-                !simpleState1.getSurrounding()[4].isHasOpponent()) {
-            validMoves.add(Move.DOWN);
-        }
-//        System.out.println(Arrays.toString(validMoves.toArray()));
-        return validMoves;
+//        List<Move> validMoves = new ArrayList<>();
+//        validMoves.add(Move.STAY);
+//
+//        if (simpleState1.getSurrounding()[0].getTileType() == SimpleState1Type.FREE &&
+//                !simpleState1.getSurrounding()[0].isHasOpponent()
+//        ) {
+//            validMoves.add(Move.BOMB);
+//        }
+//        if (simpleState1.getSurrounding()[1].getTileType() == SimpleState1Type.FREE &&
+//                !simpleState1.getSurrounding()[1].isHasOpponent()) {
+//            validMoves.add(Move.RIGHT);
+//        }
+//        if (simpleState1.getSurrounding()[2].getTileType() == SimpleState1Type.FREE &&
+//                !simpleState1.getSurrounding()[2].isHasOpponent()) {
+//            validMoves.add(Move.UP);
+//        }
+//        if (simpleState1.getSurrounding()[3].getTileType() == SimpleState1Type.FREE &&
+//                !simpleState1.getSurrounding()[3].isHasOpponent()) {
+//            validMoves.add(Move.LEFT);
+//        }
+//        if (simpleState1.getSurrounding()[4].getTileType() == SimpleState1Type.FREE &&
+//                !simpleState1.getSurrounding()[4].isHasOpponent()) {
+//            validMoves.add(Move.DOWN);
+//        }
+////        System.out.println(Arrays.toString(validMoves.toArray()));
+//        return validMoves;
+        return possibleMoves;
     }
 
     private int getReward(Result result) {
@@ -239,5 +232,10 @@ public class SimpleQLearningPlayer1 extends RLPlayer {
     @Override
     public void startNewGame(boolean isTraining, int generation, int episode) {
 
+    }
+
+    @Override
+    public List<Double> getRewards() {
+        return null;
     }
 }

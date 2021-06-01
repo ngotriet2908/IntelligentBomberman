@@ -14,16 +14,6 @@ import java.util.stream.Collectors;
 
 public class SimpleQLearningPlayer3 extends RLPlayer {
 
-    private static final int REWARD_MOVE = -1;
-    private static final int REWARD_BOMB = -3;
-    private static final int REWARD_INVALID_MOVE = -30;
-    private static final int REWARD_KILLED = -300;
-//    private static final int REWARD_KILLED_BY_OWN = -1000;
-    private static final int REWARD_KILLED_BY_OWN = -400;
-//    private static final int REWARD_KILL = +1000;
-    private static final int REWARD_KILL = +700;
-    private static final int REWARD_DESTROY_TILE = +50;
-
     private static final boolean SHOW_LOG = false;
 //    private static final boolean SHOW_LOG = true;
 //    private static final boolean DISABLE_EPSILON = false;
@@ -36,7 +26,6 @@ public class SimpleQLearningPlayer3 extends RLPlayer {
     private SimpleState3 prevSimpleState;
     private Move chosenAction;
     private final Random random;
-    private final List<Move> possibleMoves;
     private int generations;
     private int killNum;
     private int killedNum;
@@ -44,7 +33,6 @@ public class SimpleQLearningPlayer3 extends RLPlayer {
     public SimpleQLearningPlayer3(ColorType playerColor, String name) {
         super(playerColor, name);
         random = new Random();
-        possibleMoves = List.of(Move.LEFT, Move.RIGHT, Move.DOWN, Move.UP, Move.STAY, Move.BOMB);
         this.generations = 0;
         this.killNum = 0;
         this.killedNum = 0;
@@ -340,29 +328,30 @@ public class SimpleQLearningPlayer3 extends RLPlayer {
     }
 
     private List<Move> getPossibleActions(SimpleState3 simpleState1) {
-        List<Move> validMoves = new ArrayList<>();
-        validMoves.add(Move.STAY);
-
-        if (simpleState1.getSurrounding()[0].getTileType() == SimpleState3Type.FREE) {
-            validMoves.add(Move.BOMB);
-        }
-        if (simpleState1.getSurrounding()[1].getTileType() == SimpleState3Type.FREE) {
-            validMoves.add(Move.RIGHT);
-        }
-        if (simpleState1.getSurrounding()[2].getTileType() == SimpleState3Type.FREE) {
-            validMoves.add(Move.UP);
-        }
-        if (simpleState1.getSurrounding()[3].getTileType() == SimpleState3Type.FREE) {
-            validMoves.add(Move.LEFT);
-        }
-        if (simpleState1.getSurrounding()[4].getTileType() == SimpleState3Type.FREE) {
-            validMoves.add(Move.DOWN);
-        }
-//        if (SHOW_LOG) {
-//            System.out.println(simpleState1);
-//            System.out.println(Arrays.toString(validMoves.toArray()));
+//        List<Move> validMoves = new ArrayList<>();
+//        validMoves.add(Move.STAY);
+//
+//        if (simpleState1.getSurrounding()[0].getTileType() == SimpleState3Type.FREE) {
+//            validMoves.add(Move.BOMB);
 //        }
-        return validMoves;
+//        if (simpleState1.getSurrounding()[1].getTileType() == SimpleState3Type.FREE) {
+//            validMoves.add(Move.RIGHT);
+//        }
+//        if (simpleState1.getSurrounding()[2].getTileType() == SimpleState3Type.FREE) {
+//            validMoves.add(Move.UP);
+//        }
+//        if (simpleState1.getSurrounding()[3].getTileType() == SimpleState3Type.FREE) {
+//            validMoves.add(Move.LEFT);
+//        }
+//        if (simpleState1.getSurrounding()[4].getTileType() == SimpleState3Type.FREE) {
+//            validMoves.add(Move.DOWN);
+//        }
+////        if (SHOW_LOG) {
+////            System.out.println(simpleState1);
+////            System.out.println(Arrays.toString(validMoves.toArray()));
+////        }
+//        return validMoves;
+        return possibleMoves;
     }
 
     private int rewardFunctionMove(int tickCount) {
@@ -478,6 +467,11 @@ public class SimpleQLearningPlayer3 extends RLPlayer {
     @Override
     public void startNewGame(boolean isTraining, int generation, int episode) {
 
+    }
+
+    @Override
+    public List<Double> getRewards() {
+        return null;
     }
 
     public static void main(String[] args) {

@@ -36,17 +36,20 @@ public class Controller {
 //    private final int BOARD_SIZE = 6;
 //    private final int BOARD_SIZE = 9;
     private final int TILE_SIZE_BASE = 300;
+    public final String BOARD = "board6.txt";
 
 
-    private final int GEN_COUNT = 100;
-    private final int TRAIN_COUNT = 2000;
+    private final int GEN_COUNT = 1;
+    private final int TRAIN_COUNT = 5000;
     private final int EVAL_COUNT = 100;
     private final boolean DISABLE_ANIMATION = true;
-//
+    public final boolean EXPORT_RESULT = true;
+
 //    private final int GEN_COUNT = 1;
 //    private final int TRAIN_COUNT = 0;
 //    private final int EVAL_COUNT = 10;
 //    private final boolean DISABLE_ANIMATION = false;
+//    public final boolean EXPORT_RESULT = false;
 
     private Move enteredMove = null;
 

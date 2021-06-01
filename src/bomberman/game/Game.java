@@ -14,7 +14,9 @@ import sample.Controller;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileWriter;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class Game implements Runnable {
     private static final boolean ADD_BOMB_RANDOMLY = true;
@@ -22,7 +24,7 @@ public class Game implements Runnable {
     private static final int STATE_DELAY = 50;
     //    private static final int STATE_DELAY = 1000;
     public static final int BOMB_COUNT_DOWN = 3;
-    private static final int MAX_TURN = 100;
+    private static final int MAX_TURN = 50;
     private static final int BOMB_BLAST_RADIUS = 1;
     private List<AbstractPlayer> players;
     private int size;
@@ -421,10 +423,38 @@ public class Game implements Runnable {
                 ((DeepLearningPlayer) abstractPlayer).closeSocket();
             }
         }
+
+        if (!controller.EXPORT_RESULT) return;
+
+        try {
+            String fileName = "result.txt";
+            String separator = "/";
+            File file = new File(fileName);
+            if (file.createNewFile()) {
+                System.out.println("Created file " + fileName);
+            } else {
+                System.out.println("Already exists " + fileName);
+            }
+            for (AbstractPlayer abstractPlayer : players) {
+                FileWriter writer = new FileWriter(fileName);
+                System.out.println("> " + abstractPlayer.getClass().getSimpleName());
+                if (abstractPlayer instanceof RLPlayer) {
+                    String line = abstractPlayer.getClass().getSimpleName() + separator +
+                            ((RLPlayer) abstractPlayer).getRewards()
+                            .stream().map(String::valueOf)
+                            .collect(Collectors.joining(separator)) + "\n";
+                    writer.write(line);
+                }
+
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
     }
 
     public void runOneGame(int generation, int episode, boolean isTraining) {
-        initialise("board3.txt");
+        initialise(controller.BOARD);
 //            initialise("board1.txt");
 //            System.out.println("Loop: " + loopCount);
         ended = false;
@@ -509,6 +539,11 @@ public class Game implements Runnable {
         this.players.forEach(abstractPlayer -> {
             if (abstractPlayer.isAlive()) {
                 scoreMap.put(abstractPlayer, scoreMap.get(abstractPlayer) + 1);
+            }
+        });
+        players.forEach(abstractPlayer -> {
+            if (abstractPlayer instanceof RLPlayer) {
+                ((RLPlayer) abstractPlayer).endAGame(isTraining, generation, episode);
             }
         });
     }
