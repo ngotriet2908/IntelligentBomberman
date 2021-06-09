@@ -33,7 +33,7 @@ public abstract class RLPlayer extends AbstractPlayer {
     }
 
     public void endAGame(boolean isTraining, int generation, int episode) {
-        rewards.add((double) reward);
+//        rewards.add((double) reward);
     }
 
     public String getName() {
@@ -44,7 +44,11 @@ public abstract class RLPlayer extends AbstractPlayer {
         this.name = name;
     }
 
+    public int getReward() {
+        return reward;
+    }
+
     public List<Double> getRewards() {
         return rewards;
-    };
+    }
 }

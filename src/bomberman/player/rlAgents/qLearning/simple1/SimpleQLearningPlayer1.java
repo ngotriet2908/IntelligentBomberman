@@ -233,9 +233,4 @@ public class SimpleQLearningPlayer1 extends RLPlayer {
     public void startNewGame(boolean isTraining, int generation, int episode) {
 
     }
-
-    @Override
-    public List<Double> getRewards() {
-        return null;
-    }
 }

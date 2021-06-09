@@ -447,16 +447,6 @@ public class DeepLearningPlayer extends RLPlayer {
         reward = 0;
     }
 
-    @Override
-    public void endAGame(boolean isTraining, int generation, int episode) {
-        rewards.add((double)reward);
-    }
-
-    @Override
-    public List<Double> getRewards() {
-        return null;
-    }
-
     public void closeSocket() {
         System.out.println("kills: " + killNum);
         System.out.println("killeds: " + killedNum);

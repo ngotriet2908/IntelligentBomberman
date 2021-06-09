@@ -20,12 +20,10 @@ public class SimpleQLearningPlayer extends RLPlayer {
     private SimpleState prevSimpleState;
     private Move chosenAction;
     private final Random random;
-    private int generations;
 
     public SimpleQLearningPlayer(ColorType playerColor, String name) {
         super(playerColor, name);
         random = new Random();
-        this.generations = 0;
 
         try {
             FileInputStream fi = new FileInputStream("src/bomberman/player/rlAgents/qLearning/simple/trainData/" + this.getName());
@@ -157,7 +155,8 @@ public class SimpleQLearningPlayer extends RLPlayer {
     }
 
     private int getReward(Result result) {
-//        if (result.isKilled()) return REWARD_KILLED;
+
+        if (result.isKilled()) return REWARD_KILLED;
         int reward = ((result.isValidMove()) ? REWARD_MOVE : REWARD_INVALID_MOVE) +
                 ((result.isKilled()) ? REWARD_KILLED : 0) +
                 REWARD_KILL * result.getGetDestroyedPlayers() +
@@ -202,7 +201,8 @@ public class SimpleQLearningPlayer extends RLPlayer {
 
     @Override
     public void updateResult(Result result, Game game) {
-        generations++;
+        int reward = getReward(result);
+        this.reward += reward;
         SimpleState thisState = extractState(game);
         List<Move> possibleActions = getPossibleActions(game);
         double maxNextQ = -100000000.0;
@@ -215,22 +215,11 @@ public class SimpleQLearningPlayer extends RLPlayer {
         }
         QPair qPair = new QPair(prevSimpleState, chosenAction);
         double currentQ = getOrCreate(qPair);
-        int reward = getReward(result);
 //        if (true) {
 //        if (reward > -1) {
 //            System.out.println(reward);
 //        }
         double newQ = currentQ + LEARNING_RATE*(reward*1.0 + DISCOUNT_FACTOR * maxNextQ - currentQ);
         qTable.put(qPair, newQ);
-    }
-
-    @Override
-    public void startNewGame(boolean isTraining, int generation, int episode) {
-
-    }
-
-    @Override
-    public List<Double> getRewards() {
-        return null;
     }
 }

@@ -15,7 +15,7 @@ public abstract class AbstractPlayer {
     protected static final int REWARD_KILLED = -300;
     //    private static final int REWARD_KILLED_BY_OWN = -1000;
     protected static final int REWARD_KILLED_BY_OWN = -300;
-    protected static final int REWARD_KILL = +100;
+    protected static final int REWARD_KILL = +500;
     protected static final int REWARD_DESTROY_TILE = +30;
 
     private List<Bomb> placedBombs;

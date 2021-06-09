@@ -475,8 +475,22 @@ public class DoubleQSimple3 extends RLPlayer {
         return chosenAction;
     }
 
+    private int getReward(Result result) {
+        if (result.isKilled()) return REWARD_KILLED;
+
+        int reward = ((result.isValidMove()) ? REWARD_MOVE : REWARD_INVALID_MOVE) +
+                REWARD_KILL * result.getGetDestroyedPlayers() +
+                REWARD_DESTROY_TILE * result.getDestroyedWalls();
+//        if (reward > 0) {
+//            System.out.println(reward);
+//        }
+        return reward;
+    }
+
     @Override
     public void updateResult(Result result, Game game) {
+        int reward = getReward(result);
+        this.reward += reward;
         if (DISABLE_EPSILON) return;
         generations++;
         SimpleState3 thisState = extractState(game);
@@ -503,7 +517,7 @@ public class DoubleQSimple3 extends RLPlayer {
                 }
             }
 
-            int reward = getReward(result, walls, game.getTickCount());
+
 //        if (true) {
 //        if (reward > -1) {
 //            System.out.println(reward);
@@ -528,9 +542,7 @@ public class DoubleQSimple3 extends RLPlayer {
                     walls += (game.getBoard()[i][j].getTileType() == TileType.BREAKABLE_TILE)? 1 : 0;
                 }
             }
-
-            int reward = getReward(result, walls, game.getTickCount());
-//        if (true) {
+            //        if (true) {
 //        if (reward > -1) {
 //            System.out.println(reward);
 //        }
@@ -540,12 +552,6 @@ public class DoubleQSimple3 extends RLPlayer {
 
 
     }
-
-    @Override
-    public List<Double> getRewards() {
-        return null;
-    }
-
 //    public static void main(String[] args) {
 //        DoubleQSimple3 qLearningPlayer2 = new DoubleQSimple3(ColorType.GREEN, "SimpleQ2");
 //        for(Map.Entry<QPair3, Double> entry: qLearningPlayer2.qTable.entrySet()) {

@@ -156,11 +156,6 @@ public class SimpleQLearningPlayer2 extends RLPlayer {
 
     }
 
-    @Override
-    public List<Double> getRewards() {
-        return null;
-    }
-
     public static void main(String[] args) {
         SimpleQLearningPlayer2 qLearningPlayer2 = new SimpleQLearningPlayer2(ColorType.GREEN, "SimpleQ4");
         for(Map.Entry<QPair2, Double> entry: qLearningPlayer2.qTable.entrySet()) {

@@ -17,10 +17,9 @@ public class SimpleQLearningPlayer3 extends RLPlayer {
     private static final boolean SHOW_LOG = false;
 //    private static final boolean SHOW_LOG = true;
 //    private static final boolean DISABLE_EPSILON = false;
-    private static final boolean DISABLE_EPSILON = true;
 
     private static final double EPSILON = 0.1;
-    private static final double DISCOUNT_FACTOR = 0.98;
+    private static final double DISCOUNT_FACTOR = 0.99;
     private static final double LEARNING_RATE = 0.2;
     private Map<QPair3, Double> qTable;
     private SimpleState3 prevSimpleState;
@@ -47,10 +46,10 @@ public class SimpleQLearningPlayer3 extends RLPlayer {
         System.out.println(qTable.size());
     }
 
-    public void saveQTableToFile() {
+    public void saveQTableToFile(boolean updateAgentData) {
         System.out.println("kills: " + killNum);
         System.out.println("killeds: " + killedNum);
-        if (DISABLE_EPSILON) return;
+        if (!updateAgentData) return;
         try {
             FileOutputStream fileOut = new FileOutputStream("src/bomberman/player/rlAgents/qLearning/simple3/trainData/" + this.getName());
             ObjectOutputStream objectOut = new ObjectOutputStream(fileOut);
@@ -364,31 +363,22 @@ public class SimpleQLearningPlayer3 extends RLPlayer {
         return Math.max((int)(REWARD_BOMB*(1 + tickCount*1.0/10)), -6);
     }
 
-    private int getReward(Result result, int tileNum, int tickCount) {
-        int killedReward = 0;
-
-        if (result.isDiedByOwn()) killedReward = REWARD_KILLED_BY_OWN;
-        else if (result.isKilled()) killedReward = REWARD_KILLED;
-//        if (!result.isValidMove()) System.out.println("not a valid move");
-//        int reward = (((result.isValidMove()) ? (chosenAction == Move.BOMB)? REWARD_BOMB : REWARD_MOVE
-        int reward = (((result.isValidMove()) ? (chosenAction == Move.BOMB)? rewardFunctionBomb(tickCount) : rewardFunctionMove(tickCount)
-                : REWARD_INVALID_MOVE) +
-                killedReward +
-                REWARD_KILL * result.getGetDestroyedPlayers() +
-                REWARD_DESTROY_TILE * result.getDestroyedWalls());
-//        if (reward > 0) {
-//            System.out.println(reward);
-//        }
-        if (result.getGetDestroyedPlayers() > 0) {
-//            System.out.println("killed reward: " + reward);
-            killNum++;
-//            System.out.println("Killed opponent");
-        }
-
-        if (result.isDiedByOwn()) {
+    private int getReward(Result result) {
+        if (result.isKilled()) {
             killedNum++;
-//            System.out.println("Killed opponent");
         }
+        if (result.getGetDestroyedPlayers() > 0) {
+            killNum += result.getGetDestroyedPlayers();
+        }
+
+        if (result.isKilled()) return REWARD_KILLED;
+        int reward = ((result.isValidMove()) ? REWARD_MOVE : REWARD_INVALID_MOVE) +
+                ((result.isKilled()) ? REWARD_KILLED : 0) +
+                REWARD_KILL * result.getGetDestroyedPlayers() +
+                REWARD_DESTROY_TILE * result.getDestroyedWalls();
+//        if (true) {
+//            System.out.println(result.toString() + "| r: " + reward);
+//        }
         return reward;
     }
 
@@ -397,6 +387,7 @@ public class SimpleQLearningPlayer3 extends RLPlayer {
         prevSimpleState = extractState(game);
         List<Move> possibleActions = getPossibleActions(prevSimpleState);
         Move chosenMove;
+
         if (random.nextDouble() <= EPSILON && !DISABLE_EPSILON) {
 //            System.out.println("choose random action");
             chosenMove = possibleActions.get(random.nextInt(possibleActions.size()));
@@ -427,6 +418,8 @@ public class SimpleQLearningPlayer3 extends RLPlayer {
 
     @Override
     public void updateResult(Result result, Game game) {
+        int reward = getReward(result);
+        this.reward += reward;
         if (DISABLE_EPSILON) return;
         generations++;
         SimpleState3 thisState = extractState(game);
@@ -451,7 +444,6 @@ public class SimpleQLearningPlayer3 extends RLPlayer {
             }
         }
 
-        int reward = getReward(result, walls, game.getTickCount());
 //        if (true) {
 //        if (reward > -1) {
 //            System.out.println(reward);
@@ -464,16 +456,6 @@ public class SimpleQLearningPlayer3 extends RLPlayer {
         qTable.put(qPair, newQ);
     }
 
-    @Override
-    public void startNewGame(boolean isTraining, int generation, int episode) {
-
-    }
-
-    @Override
-    public List<Double> getRewards() {
-        return null;
-    }
-
     public static void main(String[] args) {
         SimpleQLearningPlayer3 qLearningPlayer2 = new SimpleQLearningPlayer3(ColorType.GREEN, "SimpleQ2");
         for(Map.Entry<QPair3, Double> entry: qLearningPlayer2.qTable.entrySet()) {
@@ -482,6 +464,6 @@ public class SimpleQLearningPlayer3 extends RLPlayer {
 //            }
             System.out.println(entry.getKey() + "| r: " + entry.getValue());
         }
-        qLearningPlayer2.saveQTableToFile();
+        qLearningPlayer2.saveQTableToFile(false);
     }
 }

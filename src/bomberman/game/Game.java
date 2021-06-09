@@ -1,6 +1,8 @@
 package bomberman.game;
 
 import bomberman.player.AbstractPlayer;
+import bomberman.player.RandomPlayer;
+import bomberman.player.SimplePlayer;
 import bomberman.player.rlAgents.RLPlayer;
 import bomberman.player.rlAgents.deepLearning.DeepLearningPlayer;
 import bomberman.player.rlAgents.doubleQlearning.simple3.DoubleQSimple3;
@@ -24,7 +26,7 @@ public class Game implements Runnable {
     private static final int STATE_DELAY = 50;
     //    private static final int STATE_DELAY = 1000;
     public static final int BOMB_COUNT_DOWN = 3;
-    private static final int MAX_TURN = 50;
+    private static final int MAX_TURN = 30;
     private static final int BOMB_BLAST_RADIUS = 1;
     private List<AbstractPlayer> players;
     private int size;
@@ -48,6 +50,8 @@ public class Game implements Runnable {
     private int genCount;
     private int trainCount;
     private int evalCount;
+    private List<Double> meanRewards;
+    private List<Double> winRate;
 
     public Game(List<AbstractPlayer> players, int size, boolean autoReset, int genCount, int trainCount, int evalCount, boolean isAnimationDisabled) {
         this.players = players;
@@ -60,10 +64,12 @@ public class Game implements Runnable {
         this.evalCount = evalCount;
         this.isAnimationDisabled = isAnimationDisabled;
         this.scoreMap = new HashMap<>();
+        this.meanRewards = new ArrayList<>();
+        this.winRate = new ArrayList<>();
         this.players.forEach(abstractPlayer -> scoreMap.put(abstractPlayer, 0));
     }
 
-    public void initialise(String filename) {
+    public void initialise(String filename, boolean isTraining) {
         List<String[]> rows = new ArrayList<>();
         this.tickCount = 0;
         this.paused = false;
@@ -108,12 +114,24 @@ public class Game implements Runnable {
 //        }
 
         List<Tile> startedTiles = new ArrayList<>();
-        startedTiles.add(this.board[1][1]);
-        startedTiles.add(this.board[1][size - 2]);
-        startedTiles.add(this.board[size - 2][1]);
-        startedTiles.add(this.board[size - 2][size - 2]);
+        if (isTraining) {
+            for (int i = 0; i < size; i++) {
+                for (int j = 0; j < rows.get(i).length; j++) {
+                    if (this.board[i][j].getTileType() == TileType.FREE) {
+                        startedTiles.add(this.board[i][j]);
+                    }
+                }
+            }
+            Collections.shuffle(startedTiles);
+        } else {
+            startedTiles.add(this.board[1][1]);
+            startedTiles.add(this.board[size - 2][size - 2]);
+            startedTiles.add(this.board[1][size - 2]);
+            startedTiles.add(this.board[size - 2][1]);
+        }
 
-        Collections.shuffle(startedTiles);
+
+
         for (AbstractPlayer player : players) {
             player.setAlive(true);
             player.setTile(startedTiles.get(0));
@@ -308,6 +326,8 @@ public class Game implements Runnable {
     public void addBombRandomly(List<Bomb> willAddBomb) {
         if (tickCount < MAX_TURN) return;
         for (AbstractPlayer player : players) {
+//            if (player instanceof RandomPlayer || player instanceof SimplePlayer) continue;
+            if (player instanceof SimplePlayer) continue;
             if (player.isAlive()) {
 
                 // check % for putting additional bombs only check when turn > 100
@@ -387,22 +407,39 @@ public class Game implements Runnable {
     public void run() {
         System.out.println("Start the game loop");
         for (int gen = 1; gen <= genCount; gen++) {
+
             System.out.println();
             for (int episode = 1; episode <= trainCount; episode++) {
 
                 runOneGame(gen, episode, true);
-                System.out.println("Gen:" + gen + " Training Episode:" + episode);
+//                System.out.println("Gen:" + gen + " Training Episode:" + episode);
             }
 
+            double eval_sum = 0;
+            int winGames = 0;
             for (int episode = 1; episode <= evalCount; episode++) {
-
                 runOneGame(gen, episode, false);
-                System.out.println("Gen:" + gen + "Evaluation Episode:" + episode);
+                for(AbstractPlayer abstractPlayer: players) {
+                    if (abstractPlayer instanceof RLPlayer &&
+                    abstractPlayer.isAlive()) {
+                        winGames++;
+                    }
+                }
+                eval_sum += players.stream().filter(abstractPlayer -> abstractPlayer instanceof RLPlayer)
+                        .mapToInt(abstractPlayer -> ((RLPlayer) abstractPlayer).getReward()).sum();
             }
 
-            for (Map.Entry<AbstractPlayer, Integer> entry : scoreMap.entrySet()) {
-                System.out.println("Player " + entry.getKey().getPlayerColor() + ": " + entry.getValue());
-            }
+
+            eval_sum = eval_sum/evalCount;
+            meanRewards.add(eval_sum);
+            winRate.add(winGames*1.0/evalCount);
+            System.out.println("Gen:" + gen + ", mean:" + eval_sum + ", wr:" + (winGames*1.0/evalCount));
+
+//            if (eval_sum > 480) break;
+
+//            for (Map.Entry<AbstractPlayer, Integer> entry : scoreMap.entrySet()) {
+//                System.out.println("Player " + entry.getKey().getPlayerColor() + ": " + entry.getValue());
+//            }
         }
 
 
@@ -414,9 +451,9 @@ public class Game implements Runnable {
             } else if (abstractPlayer instanceof SimpleQLearningPlayer2) {
                 ((SimpleQLearningPlayer2) abstractPlayer).saveQTableToFile();
             } else if (abstractPlayer instanceof SimpleQLearningPlayer3) {
-                ((SimpleQLearningPlayer3) abstractPlayer).saveQTableToFile();
+                ((SimpleQLearningPlayer3) abstractPlayer).saveQTableToFile(controller.UPDATE_AGENT_DATA);
             } else if (abstractPlayer instanceof SarsaSimple3) {
-                ((SarsaSimple3) abstractPlayer).saveQTableToFile();
+                ((SarsaSimple3) abstractPlayer).saveQTableToFile(controller.UPDATE_AGENT_DATA);
             } else if (abstractPlayer instanceof DoubleQSimple3) {
                 ((DoubleQSimple3) abstractPlayer).saveQTableToFile();
             } else if (abstractPlayer instanceof DeepLearningPlayer) {
@@ -427,7 +464,7 @@ public class Game implements Runnable {
         if (!controller.EXPORT_RESULT) return;
 
         try {
-            String fileName = "result.txt";
+            String fileName = controller.RESULT_NAME;
             String separator = "/";
             File file = new File(fileName);
             if (file.createNewFile()) {
@@ -435,18 +472,25 @@ public class Game implements Runnable {
             } else {
                 System.out.println("Already exists " + fileName);
             }
-            for (AbstractPlayer abstractPlayer : players) {
-                FileWriter writer = new FileWriter(fileName);
-                System.out.println("> " + abstractPlayer.getClass().getSimpleName());
-                if (abstractPlayer instanceof RLPlayer) {
-                    String line = abstractPlayer.getClass().getSimpleName() + separator +
-                            ((RLPlayer) abstractPlayer).getRewards()
-                            .stream().map(String::valueOf)
+            FileWriter writer = new FileWriter(fileName);
+//            for (AbstractPlayer abstractPlayer : players) {
+//                System.out.println("> " + abstractPlayer.getClass().getSimpleName());
+//                if (abstractPlayer instanceof RLPlayer) {
+//                    String line = abstractPlayer.getClass().getSimpleName() + separator +
+//                            ((RLPlayer) abstractPlayer).getRewards()
+//                            .stream().map(String::valueOf)
+//                            .collect(Collectors.joining(separator)) + "\n";
+//
+//                    writer.write(line);
+//                }
+//            }
+            String line = meanRewards.stream().map(String::valueOf)
+                            .collect(Collectors.joining(separator)) + "\n" +
+                    winRate.stream().map(String::valueOf)
                             .collect(Collectors.joining(separator)) + "\n";
-                    writer.write(line);
-                }
-
-            }
+                    ;
+            writer.write(line);
+            writer.close();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -454,7 +498,7 @@ public class Game implements Runnable {
     }
 
     public void runOneGame(int generation, int episode, boolean isTraining) {
-        initialise(controller.BOARD);
+        initialise(controller.BOARD, isTraining);
 //            initialise("board1.txt");
 //            System.out.println("Loop: " + loopCount);
         ended = false;
@@ -541,7 +585,7 @@ public class Game implements Runnable {
                 scoreMap.put(abstractPlayer, scoreMap.get(abstractPlayer) + 1);
             }
         });
-        players.forEach(abstractPlayer -> {
+        this.players.forEach(abstractPlayer -> {
             if (abstractPlayer instanceof RLPlayer) {
                 ((RLPlayer) abstractPlayer).endAGame(isTraining, generation, episode);
             }

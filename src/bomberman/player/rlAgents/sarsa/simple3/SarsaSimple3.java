@@ -49,10 +49,10 @@ public class SarsaSimple3 extends RLPlayer {
         System.out.println(qTable.size());
     }
 
-    public void saveQTableToFile() {
+    public void saveQTableToFile(boolean updateAgentData) {
         System.out.println("kills: " + killNum);
         System.out.println("killeds: " + killedNum);
-//        if (DISABLE_EPSILON) return;
+        if (!updateAgentData) return;
         try {
             FileOutputStream fileOut = new FileOutputStream("src/bomberman/player/rlAgents/sarsa/simple3/trainData/" + this.getName());
             ObjectOutputStream objectOut = new ObjectOutputStream(fileOut);
@@ -185,15 +185,16 @@ public class SarsaSimple3 extends RLPlayer {
 //                            return bomb.getOwner().equals(this);
 //                        }).count());
 //        simpleState.setPlacedBombs(getMinStepToOpponent(game));
-        game.getBombs().forEach(bomb -> {
-            if (bomb.getOwner() != null && bomb.getOwner().equals(this)) {
-                simpleState.getBombLists().add(new Point(
-                        bomb.getTile().getCoordinate().x - this.getTile().getCoordinate().x,
-                        bomb.getTile().getCoordinate().y - this.getTile().getCoordinate().y
-                ));
-            }
-        });
-        simpleState.getBombLists().sort(Comparator.comparing(bomb -> bomb.x*1000 + bomb.y));
+
+//        game.getBombs().forEach(bomb -> {
+//            if (bomb.getOwner() != null && bomb.getOwner().equals(this)) {
+//                simpleState.getBombLists().add(new Point(
+//                        bomb.getTile().getCoordinate().x - this.getTile().getCoordinate().x,
+//                        bomb.getTile().getCoordinate().y - this.getTile().getCoordinate().y
+//                ));
+//            }
+//        });
+//        simpleState.getBombLists().sort(Comparator.comparing(bomb -> bomb.x*1000 + bomb.y));
         for(AbstractPlayer player: game.getPlayers()) {
             if (player.equals(this)) continue;
             int dist = Math.abs(player.getTile().getCoordinate().x - this.getTile().getCoordinate().x) +
@@ -420,6 +421,8 @@ public class SarsaSimple3 extends RLPlayer {
 
     @Override
     public void updateResult(Result result, Game game) {
+        int reward = getReward(result);
+        this.reward += reward;
         if (DISABLE_EPSILON) return;
         SimpleState3 thisState = extractState(game);
         List<Move> possibleActions = getPossibleActions(thisState);
@@ -436,8 +439,7 @@ public class SarsaSimple3 extends RLPlayer {
         QPair3 qPair = new QPair3(prevSimpleState, chosenAction);
         Double currentQ = getOrCreate(qPair);
 
-        int reward = getReward(result);
-        this.reward += reward;
+
 //        if (true) {
 //        if (reward > -1) {
 //            System.out.println(reward);
@@ -451,11 +453,6 @@ public class SarsaSimple3 extends RLPlayer {
         qTable.put(qPair, newQ);
     }
 
-    @Override
-    public List<Double> getRewards() {
-        return null;
-    }
-
     public static void main(String[] args) {
         SarsaSimple3 qLearningPlayer2 = new SarsaSimple3(ColorType.GREEN, "SimpleQ2");
         for(Map.Entry<QPair3, Double> entry: qLearningPlayer2.qTable.entrySet()) {
@@ -464,6 +461,6 @@ public class SarsaSimple3 extends RLPlayer {
 //            }
             System.out.println(entry.getKey() + "| r: " + entry.getValue());
         }
-        qLearningPlayer2.saveQTableToFile();
+        qLearningPlayer2.saveQTableToFile(false);
     }
 }
